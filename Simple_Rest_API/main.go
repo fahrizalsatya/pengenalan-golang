@@ -3,62 +3,63 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type Sisi struct {
 	JenisBangun string `json:"jenis_bangun"`
-	Panjang int `json:"panjang"`
-	Lebar int `json:"lebar"`
+	Panjang     int    `json:"panjang"`
+	Lebar       int    `json:"lebar"`
 }
 
 type Hasil struct {
 	JenisBangun string `json:"jenis_bangun"`
-	Luas int `json:"luas"`
+	Luas        int    `json:"luas"`
 }
 
-func main(){
+func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/api/hitung-luas",Luas)
+	router.HandleFunc("/api/hitung-luas", Luas)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
-func Luas (w http.ResponseWriter, r *http.Request){
+func Luas(w http.ResponseWriter, r *http.Request) {
 
 	var hasilHitung []Hasil
 	var sisi []Sisi
-	if r.Method != "POST"{
-		WrapAPIError(w,r,http.StatusText(http.StatusMethodNotAllowed),http.StatusMethodNotAllowed)
+	if r.Method != "POST" {
+		WrapAPIError(w, r, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
-	if err != nil{
-		WrapAPIError(w,r,"can't read body",http.StatusBadRequest)
+	if err != nil {
+		WrapAPIError(w, r, "can't read body", http.StatusBadRequest)
 		return
 	}
 
 	err = json.Unmarshal(body, &sisi)
 	if err != nil {
-		WrapAPIError(w,r,"error unmarshal : "+err.Error(),http.StatusInternalServerError)
+		WrapAPIError(w, r, "error unmarshal : "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	for _,v := range sisi{
-		hasilHitung = append(hasilHitung,Hasil{
+	for _, v := range sisi {
+		hasilHitung = append(hasilHitung, Hasil{
 			JenisBangun: v.JenisBangun,
 			Luas:        v.RumusLuas(),
 		})
 	}
 
-	WrapAPIData(w,r,hasilHitung,http.StatusOK,"success")
+	WrapAPIData(w, r, hasilHitung, http.StatusOK, "success")
 }
 
-func (s *Sisi) RumusLuas () int {
+func (s *Sisi) RumusLuas() int {
 	return s.Panjang * s.Lebar
 }
 
@@ -66,7 +67,7 @@ func WrapAPIError(w http.ResponseWriter, r *http.Request, message string, code i
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	result, err := json.Marshal(map[string]interface{}{
-		"code":         code,
+		"code":          code,
 		"error_type":    http.StatusText(code),
 		"error_details": message,
 	})
@@ -107,7 +108,3 @@ func WrapAPIData(w http.ResponseWriter, r *http.Request, data interface{}, code 
 		log.Println(fmt.Sprintf("can't wrap API data : %s", err))
 	}
 }
-
-
-
-
